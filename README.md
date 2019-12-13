@@ -73,8 +73,25 @@ JpaTransactionManager
 =====================
 Committing JPA transaction on EntityManager
 
-HikariProxyConnection
-======================
+This transaction manager is appropriate for applications that use a single JPA EntityManagerFactory for transactional data access. JTA (usually through JtaTransactionManager) is necessary for accessing multiple transactional resources within the same transaction. Note that you need to configure your JPA provider accordingly in order to make it participate in JTA transactions.
+
+
+## What transaction manager to use
+
+The org.springframework.transaction.PlatformTransactionManager interface is the key abstraction in the Spring API providing essential methods for controlling transaction operations at run-time: begin, commit and rollback.
+
+PlatformTransactionManager interface, its implementations
+
+   ## JtaTransactionManager -----> JTA
+   ## DataSourceTransactionManager -----> JDBC
+   ## JpaTransactionManager ------> JPA
+   ## HibernateTransactionManager ------> Hibernate
+
+it depand on your requirment which moudle of spring your are using
+
+
+
+
 
 Database Connection Pooling in Java With HikariCP 
 ==================================================
@@ -229,8 +246,13 @@ public class ConnectionPool {
     }
 
 }
+com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Pool stats (total=10, active=0, idle=10, waiting=0)
 
-==>com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Pool stats (total=10, active=0, idle=10, waiting=0)
+## HikariProxyConnection
+
+The proxies delegate to the real driver classes. Some proxies, like the one for ResultSet, only intercept a few methods. Without the code generation, the proxy would have to implement all 50+ methods which simply delegate to the wrapped instance.
+
+Code generation, based on reflection, also means that nothing needs to be done when a new JDK version introduces new JDBC methods to existing interfaces.
 
 
 CONDITIONS EVALUATION REPORT
