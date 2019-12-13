@@ -76,6 +76,160 @@ Committing JPA transaction on EntityManager
 HikariProxyConnection
 ======================
 
+Database Connection Pooling in Java With HikariCP 
+==================================================
+Connection pooling is a technique used to improve performance in applications with dynamic database-driven content. Opening and closing database connections may not seem like a costly expense, but it can add up rather quickly. Let's assume it takes 5ms to establish a connection and 5ms to execute your query (completely made up numbers), 50% of the time is establishing the connection. Extend this to thousands or tens of thousands of requests and there is a lot of wasted network time. Connection pools are essentially a cache of open database connections. Once you open and use a database connection instead of closing it you add it back to the pool. When you go to fetch a new connection, if there is one available in the pool, it will use that connection instead of establishing another.
+
+## Why Use a Connection Pool?
+
+Constantly opening and closing connections can be expensive. Cache and reuse.
+    When activity spikes you can limit the number of connections to the database. This will force code to block until a connection is available. This is especially helpful in distributed environments.
+    Split out common operations into multiple pools. For instance, you can have a pool designated for OLAP connections and a pool for OLTP connections each with different configurations.
+
+
+##  HikariCP
+
+HikariCP is a very fast lightweight Java connection pool. The API and overall codebase are relatively small (a good thing) and highly optimized. It also does not cut corners for performance like many other Java connection pool implementations. The Wiki is highly informative and dives really deep. If you are not as interested in the deep dives, you should at least read and watch the video on connection pool sizing.
+
+## Creating Connection pools
+
+Let's create two connections pools one for OLTP (named transactional) queries and one for OLAP (named processing). We want them split so we can have a queue of reporting queries back up but allow critical transactional queries to still get priority (this is up to the database of course, but we can help a bit). We can also easily configure different timeouts or transaction isolation levels. For now we just change their names and pool sizes.
+
+## Configuring the Pools
+
+HikariCP offers several options for configuring the pool. Since we are fans of roll your own and already created our own Typesafe Configuration, we will reuse that. Notice we are using some of Typesafe's configuration inheritance.
+
+pools {
+
+    default {
+
+        jdbcUrl = "jdbc:hsqldb:mem:testdb"
+
+        maximumPoolSize = 10
+
+        minimumIdle = 2
+
+        username = "SA"
+
+        password = ""
+
+        cachePrepStmts = true
+
+        prepStmtCacheSize = 256
+
+        prepStmtCacheSqlLimit = 2048
+
+        useServerPrepStmts = true
+
+    }
+
+    // This syntax inherits the config from pools.default.
+
+    // We can then override or add additional properties.
+
+    transactional = ${pools.default} {
+
+        poolName = "transactional"
+
+    }
+
+    processing = ${pools.default} {
+
+        poolName = "processing"
+
+        maximumPoolSize = 30
+
+    }
+
+}
+
+
+## ConnectionPool Factory
+
+Since we don't need any additional state a static factory method passing our config, MetricRegistry and HealthCheckRegistry are sufficient. Once again, Dropwizard Metrics makes an appearance hooking into our connection pool now. This will provide us with some very useful pool stats in the future.
+
+public class ConnectionPool {
+
+    private ConnectionPool() {
+
+    }
+
+    /*
+
+     * Expects a config in the following format
+
+     *
+
+     * poolName = "test pool"
+
+     * jdbcUrl = ""
+
+     * maximumPoolSize = 10
+
+     * minimumIdle = 2
+
+     * username = ""
+
+     * password = ""
+
+     * cachePrepStmts = true
+
+     * prepStmtCacheSize = 256
+
+     * prepStmtCacheSqlLimit = 2048
+
+     * useServerPrepStmts = true
+
+     *
+
+     * Let HikariCP bleed out here on purpose
+
+     */
+
+    public static HikariDataSource getDataSourceFromConfig(
+
+        Config conf
+
+        , MetricRegistry metricRegistry
+
+        , HealthCheckRegistry healthCheckRegistry) {
+
+        HikariConfig jdbcConfig = new HikariConfig();
+
+        jdbcConfig.setPoolName(conf.getString("poolName"));
+
+        jdbcConfig.setMaximumPoolSize(conf.getInt("maximumPoolSize"));
+
+        jdbcConfig.setMinimumIdle(conf.getInt("minimumIdle"));
+
+        jdbcConfig.setJdbcUrl(conf.getString("jdbcUrl"));
+
+        jdbcConfig.setUsername(conf.getString("username"));
+
+        jdbcConfig.setPassword(conf.getString("password"));
+
+        jdbcConfig.addDataSourceProperty("cachePrepStmts", conf.getBoolean("cachePrepStmts"));
+
+        jdbcConfig.addDataSourceProperty("prepStmtCacheSize", conf.getInt("prepStmtCacheSize"));
+
+        jdbcConfig.addDataSourceProperty("prepStmtCacheSqlLimit", conf.getInt("prepStmtCacheSqlLimit"));
+
+        jdbcConfig.addDataSourceProperty("useServerPrepStmts", conf.getBoolean("useServerPrepStmts"));
+
+        // Add HealthCheck
+
+        jdbcConfig.setHealthCheckRegistry(healthCheckRegistry);
+
+        // Add Metrics
+
+        jdbcConfig.setMetricRegistry(metricRegistry);
+
+        return new HikariDataSource(jdbcConfig);
+
+    }
+
+}
+
 ==>com.zaxxer.hikari.pool.HikariPool        : HikariPool-1 - Pool stats (total=10, active=0, idle=10, waiting=0)
 
 
