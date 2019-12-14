@@ -642,8 +642,149 @@ The proxies delegate to the real driver classes. Some proxies, like the one for 
 Code generation, based on reflection, also means that nothing needs to be done when a new JDK version introduces new JDBC methods to existing interfaces.
 
 
-CONDITIONS EVALUATION REPORT
-============================
+Auto Configuration 
+====================
+
+Simply put, the Spring Boot autoconfiguration represents a way to automatically configure a Spring application based on the dependencies that are present on the classpath.
+
+Spring Boot looks at a) Frameworks available on the CLASSPATH b) Existing configuration for the application. Based on these, Spring Boot provides basic configuration needed to configure the application with these frameworks. This is called Auto Configuration.
+
+## Spring Boot Auto Configuration in action.
+
+When we run StudentServicesApplication.java as a Java Application, you will see a few important things in the log.
+
+Mapping servlet: 'dispatcherServlet' to [/]
+
+Mapped "{[/error]}" onto public org.springframework.http.ResponseEntity<java.util.Map<java.lang.String, java.lang.Object>> org.springframework.boot.autoconfigure.web.BasicErrorController.error(javax.servlet.http.HttpServletRequest)
+
+Mapped URL path [/webjars/**] onto handler of type [class org.springframework.web.servlet.resource.ResourceHttpRequestHandler]
+
+Above log statements are good examples of Spring Boot Auto Configuration in action.
+
+As soon as we added in Spring Boot Starter Web as a dependency in our project, Spring Boot Autoconfiguration sees that Spring MVC is on the classpath. It autoconfigures dispatcherServlet, a default error page and webjars.
+
+If you add Spring Boot Data JPA Starter, you will see that Spring Boot Auto Configuration auto configures a datasource and an Entity Manager.
+
+## Where is Spring Boot Auto Configuration implemented?
+
+All auto configuration logic is implemented in spring-boot-autoconfigure.jar. All auto configuration logic for mvc, data, jms and other frameworks is present in a single jar.  
+
+Other important file inside spring-boot-autoconfigure.jar is /META-INF/spring.factories. This file lists all the auto configuration classes that should be enabled under the EnableAutoConfiguration key. A few of the important auto configurations are listed below.
+
+org.springframework.boot.autoconfigure.EnableAutoConfiguration=\
+org.springframework.boot.autoconfigure.aop.AopAutoConfiguration,\
+org.springframework.boot.autoconfigure.MessageSourceAutoConfiguration,\
+org.springframework.boot.autoconfigure.PropertyPlaceholderAutoConfiguration,\
+org.springframework.boot.autoconfigure.jackson.JacksonAutoConfiguration,\
+org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration,\
+org.springframework.boot.autoconfigure.jdbc.JdbcTemplateAutoConfiguration,\
+org.springframework.boot.autoconfigure.jdbc.JndiDataSourceAutoConfiguration,\
+org.springframework.boot.autoconfigure.jdbc.XADataSourceAutoConfiguration,\
+org.springframework.boot.autoconfigure.jdbc.DataSourceTransactionManagerAutoConfiguration,\
+org.springframework.boot.autoconfigure.security.SecurityAutoConfiguration,\
+org.springframework.boot.autoconfigure.security.SecurityFilterAutoConfiguration,\
+org.springframework.boot.autoconfigure.web.DispatcherServletAutoConfiguration,\
+org.springframework.boot.autoconfigure.web.EmbeddedServletContainerAutoConfiguration,\
+org.springframework.boot.autoconfigure.web.ErrorMvcAutoConfiguration,\
+
+
+### Example Auto Configuration
+
+We will take a look at DataSourceAutoConfiguration.
+
+Typically all Auto Configuration classes look at other classes available in the classpath. If specific classes are available in the classpath, then configuration for that functionality is enabled through auto configuration. Annotations like @ConditionalOnClass, @ConditionalOnMissingBean help in providing these features!
+
+#### @ConditionalOnClass({ DataSource.class, EmbeddedDatabaseType.class }) : This configuration is enabled only when these classes are available in the classpath.
+
+@Configuration
+@ConditionalOnClass({ DataSource.class, EmbeddedDatabaseType.class })
+@EnableConfigurationProperties(DataSourceProperties.class)
+@Import({ Registrar.class, DataSourcePoolMetadataProvidersConfiguration.class })
+public class DataSourceAutoConfiguration {
+
+#### @ConditionalOnMissingBean : This bean is configured only if there is no other bean configured with the same name.
+
+@Bean
+@ConditionalOnMissingBean
+public DataSourceInitializer dataSourceInitializer() {
+	return new DataSourceInitializer();
+}
+
+Embedded Database is configured only if there are no beans of type DataSource.class or XADataSource.class already configured.
+
+@Conditional(EmbeddedDatabaseCondition.class)
+@ConditionalOnMissingBean({ DataSource.class, XADataSource.class })
+@Import(EmbeddedDataSourceConfiguration.class)
+protected static class EmbeddedDatabaseConfiguration {
+}
+
+### Debugging Auto Configuration
+
+There are two ways you can debug and find more information about auto configuration.
+
+   ##### Turning on debug logging
+   #### Using Spring Boot Actuator
+
+##### Debug Logging
+
+You can turn debug logging by adding a simple property value to application.properties. In the example below, we are turning on Debug level for all logging from org.springframework package (and sub packages).
+
+###### logging.level.org.springframework: DEBUG
+
+When you restart the application, you would see an auto configuration report printed in the log. Similar to what you see below, a report is produced including all the auto configuration classes. The report separates the positive matches from negative matches. It will show why a specific bean is auto configured and also why something is not auto configured.
+
+=========================
+AUTO-CONFIGURATION REPORT
+=========================
+
+Positive matches:
+-----------------
+DispatcherServletAutoConfiguration matched
+ - @ConditionalOnClass classes found: org.springframework.web.servlet.DispatcherServlet (OnClassCondition)
+ - found web application StandardServletEnvironment (OnWebApplicationCondition)
+
+
+Negative matches:
+-----------------
+ActiveMQAutoConfiguration did not match
+ - required @ConditionalOnClass classes not found: javax.jms.ConnectionFactory,org.apache.activemq.ActiveMQConnectionFactory (OnClassCondition)
+
+AopAutoConfiguration.CglibAutoProxyConfiguration did not match
+ - @ConditionalOnProperty missing required properties spring.aop.proxy-target-class (OnPropertyCondition)
+
+
+#### Spring Boot Actuator
+
+Other way to debug auto configuration is to add spring boot actuator to your project. We will also add in HAL Browser to make things easy.
+
+<dependency>
+	<groupId>org.springframework.boot</groupId>
+	<artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+
+<dependency>
+	<groupId>org.springframework.data</groupId>
+	<artifactId>spring-data-rest-hal-browser</artifactId>
+</dependency>
+
+
+HAL Browser auto configuration http://localhost:8080/actuator/#http://localhost:8080/autoconfig would show the details of all the beans which are auto configured and those which are not.
+
+#### Disabling Auto-Configuration Classes
+
+If we wanted to exclude the auto-configuration from being loaded, we could add the @EnableAutoConfiguration annotation with exclude or excludeName attribute to a configuration class:
+	
+@Configuration
+@EnableAutoConfiguration(
+  exclude={MySQLAutoconfiguration.class})
+public class AutoconfigurationApplication {
+    //...
+}
+
+Another option to disable specific auto-configurations is by setting the spring.autoconfigure.exclude property:
+	
+spring.autoconfigure.exclude=com.baeldung.autoconfiguration.MySQLAutoconfiguration
+
 
 
 Creating shared instance of singleton bean
