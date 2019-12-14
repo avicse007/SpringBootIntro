@@ -786,11 +786,64 @@ Another option to disable specific auto-configurations is by setting the spring.
 spring.autoconfigure.exclude=com.baeldung.autoconfiguration.MySQLAutoconfiguration
 
 
+## Actuators 
+
+Spring Boot Actuator Endpoints are exposed over JMX and HTTP, most of the times we use HTTP based Actuator endpoints because they are easy to access over the browser, CURL command, shell scripts etc.
+
+Some of the useful actuator endpoints are:
+
+    beans: this endpoint returns the list of all the beans configured in our application.
+    env: provides information about the Spring Environment properties.
+    health: Shows application health
+    info: Displays application information, we can configure this in Spring environment properties.
+    mappings: Displays the list of all @RequestMapping paths.
+    shutdown: allows us to gracefully shutdown the application.
+    threaddump: provides the thread dump of the application.
+
+#### Enable Spring Actuator Endpoints
+
+<dependency>
+	<groupId>org.springframework.boot</groupId>
+	<artifactId>spring-boot-starter-actuator</artifactId>
+</dependency>
+
+
+
+Set following properties in application.properties 
+#Disabeling security for accessing actuators
+management.security.enabled=false
+
+#For actuator endpoint /8080/actuator/info
+info.app.name=Spring Actuator Example
+info.app.java.version=8
+info.app.type=Spring Boot
+
+#For exposing other endpoints in actuators
+management.endpoints.web.exposure.include=*
+
+#By default base-path of actuator endpoints is /actuator, we can change it to any other value by setting management.endpoints.web.base-path #in application properties file.
+management.endpoints.web.base-path=/management
+
+#Also, add spring security username and password in application properties file.
+spring.security.user.name=avinash
+spring.security.user.password=avinash
+
+
+Spring boot Web Application dependencies 
+
+1. Tomcat
+2. JSON Marshaller -- Jackson
+3. Logging slf4j
+4. Spring Libraries -- Spring boot autoconfigure , 
+                       Starter for tomcat , logging ,boot
+		       Spring core,AOP,beans,context,expression
+		       Spring web ,MVC
+5. Other libraries -- Snake YAML , Validators(javax,hibernate) 		       
+
+
 
 Creating shared instance of singleton bean
 ===========================================
-
-
 
 @Entity
 @Table
