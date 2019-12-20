@@ -65,20 +65,17 @@ has been assigned a unique client id and secret key.
 
 #### Start by going to the Spring Initializr and creating a new project with the following settings:
 
-    Change project type from Maven to Gradle.
-    Change the Group to com.okta.spring.
-    Change the Artifact to AuthorizationServerApplication.
-    Add one dependency: Web.
-
 #### Spring Initializr
+
+1. Change project type to Maven.
+2. Change the Group to com.okta.spring.
+3. Change the Artifact to AuthorizationServerApplication.
+4. Add two dependency: Spring Web,Spring Security and Cloud OAuth2.
+
+
 
 Download the project and copy it somewhere that makes sense on your hard drive. In this tutorial you’re going to create three different projects, so you might want to create a parent directory, something like SpringBootOAuth somewhere.
 
-You need to add one dependency to the build.gradle file:
-
-implementation 'org.springframework.security.oauth:spring-security-oauth2:2.3.3.RELEASE'
-
-This adds in Spring’s OAuth goodness.
 
 #### Update the src/main/resources/application.properties to match:
 
@@ -252,7 +249,7 @@ implementation 'org.glassfish.jaxb:jaxb-runtime'
 
 ##### Back to Spring Initializr. Create a new project with the following settings:
 
-    Project type should be Gradle (not Maven).
+    Project type should be Maven.
     Group: com.okta.spring.
     Artifact: SpringBootOAuthClient.
     Add three dependencies: Web, Thymeleaf, OAuth2 Client.
