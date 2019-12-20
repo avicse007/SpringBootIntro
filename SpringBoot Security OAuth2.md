@@ -1,6 +1,18 @@
 Spring Boot OAuth2 
 ==================
 
+## Explaining the OAuth2 Technology
+
+As I said, we will use the OAuth2 protocol, so the first thing will be to explain how this protocol works.
+
+OAuth2 has some variants, but I am going to explain what I will use in the program, and for this, I will give you an example so that you understand what we intend to do.
+
+I will put a daily scene: payment with a credit card in a store. In this case, there are three partners: the store, the bank, and us. Something similar happens in the OAuth2 protocol. These are the steps:
+
+#### The client, or the buyer, asks the bank for a credit card. Then, the bank will collect our information, verify who we are, and provide us a credit card, depending on the money we have in our account or if it tells us not to waste time. In the OAuth2 protocol that grants the cards, it is called the Authentication Server.
+#### If the bank has given us the card, we can go to the store, i.e. the web server, and we present the credit card. The store does not owe us anything, but they can ask the bank, through the card reader, if they can trust us and to what extent (the credit balance). The store is the Resource Server.
+#### The store, depending on the money that the bank says we have, will allow us to make purchases. In the OAuth2 analogy, the web server will allow us to access  pages, depending on our financial status.
+
  ## Spring Boot Security - Introduction to OAuth2
 OAuth (Open Authorization) is a simple way to publish and interact with protected data.
 It is an open standard for token-based authentication and authorization on the Internet. It allows an end user's account information to be 
